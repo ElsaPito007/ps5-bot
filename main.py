@@ -503,7 +503,7 @@ def procesar_segunda_mano(vistos: Vistos, enviadas: int) -> tuple[int, bool]:
     ]
     log.info("Segunda mano: %d candidatos nuevos para la IA", len(candidatos))
 
-        fallos_ia = 0
+    fallos_ia = 0
     for a in candidatos[:MAX_IA_POR_EJECUCION]:
         if enviadas >= MAX_ALERTAS_POR_EJECUCION:
             break
