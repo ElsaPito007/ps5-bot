@@ -364,7 +364,7 @@ def _llamar_gemini(prompt: str) -> str:
                 "responseMimeType": "application/json",
             },
         },
-        timeout=40,
+        timeout=25,
     )
     if not r.ok:
         raise RuntimeError(f"Gemini HTTP {r.status_code}: {r.text[:200]}")
@@ -503,14 +503,18 @@ def procesar_segunda_mano(vistos: Vistos, enviadas: int) -> tuple[int, bool]:
     ]
     log.info("Segunda mano: %d candidatos nuevos para la IA", len(candidatos))
 
+        fallos_ia = 0
     for a in candidatos[:MAX_IA_POR_EJECUCION]:
         if enviadas >= MAX_ALERTAS_POR_EJECUCION:
             break
         pausa(1, 2.5)
         veredicto = analizar_con_ia(a)
         if veredicto is None:
+            fallos_ia += 1
+            if fallos_ia >= 3:
+                log.error("La IA falla repetidamente; paro hasta la próxima ejecución.")
+                break
             continue  # error de IA: no lo marcamos como visto, se reintenta
-
         if not veredicto["es_valida"]:
             vistos.add(a["clave"])  # descartado: no volver a gastar tokens
             log.info("Descartado: %s → %s", a["titulo"][:50], veredicto["motivo"])
