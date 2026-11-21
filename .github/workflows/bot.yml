@@ -1,0 +1,54 @@
+name: PS5 Bot
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"   # cada 15 min (GitHub puede retrasarlo unos minutos)
+  workflow_dispatch:          # permite lanzarlo a mano desde la pestaña Actions
+
+permissions:
+  contents: write             # necesario para commitear vistos.json
+
+concurrency:
+  group: ps5-bot              # evita ejecuciones solapadas que pisen vistos.json
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Ejecutar bot
+        env:
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          AI_PROVIDER: ${{ vars.AI_PROVIDER || 'gemini' }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          MAX_PRECIO_NUEVA: ${{ vars.MAX_PRECIO_NUEVA || '450' }}
+          MAX_PRECIO_SEGUNDA_MANO: ${{ vars.MAX_PRECIO_SEGUNDA_MANO || '350' }}
+        run: python main.py
+
+      - name: Guardar historial de vistos
+        if: always()
+        run: |
+          git config user.name "ps5-bot"
+          git config user.email "ps5-bot@users.noreply.github.com"
+          git add vistos.json
+          if git diff --cached --quiet; then
+            echo "Sin cambios en vistos.json"
+          else
+            git commit -m "chore: actualizar vistos [skip ci]"
+            git pull --rebase
+            git push
+          fi
