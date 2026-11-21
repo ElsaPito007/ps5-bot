@@ -354,7 +354,7 @@ def construir_prompt(a: dict) -> str:
 
 def _llamar_gemini(prompt: str) -> str:
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
-    r = SESSION.post(
+    r = requests.post(
         url,
         headers={"x-goog-api-key": GEMINI_API_KEY, "Content-Type": "application/json"},
         json={
